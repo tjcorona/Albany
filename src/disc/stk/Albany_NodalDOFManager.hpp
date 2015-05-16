@@ -30,6 +30,8 @@ class NodalDOFManager {
       { return (_interleaved) ? inode*_numComponents + icomp : inode + _numLocalDOF*icomp; }
     inline long long int getGlobalDOF(stk::mesh::Entity node, int icomp) const
       { return (_interleaved) ? (_bulkData->identifier(node)-1) *_numComponents + icomp : (_bulkData->identifier(node)-1) + _numGlobalDOF*icomp; }
+    inline long long int getGlobalDOF(long long int node, int icomp) const
+          { return (_interleaved) ? node *_numComponents + icomp : node + _numGlobalDOF*icomp; }
     int numComponents() const {return _numComponents;}
 
 
