@@ -11,25 +11,23 @@ namespace FELIX {
 
 //**********************************************************************
 template<typename EvalT, typename Traits>
-HydrologyResidual<EvalT, Traits>::HydrologyResidual (const Teuchos::ParameterList& p,
+HydrologyResidualEvolution<EvalT, Traits>::HydrologyResidualEvolution (const Teuchos::ParameterList& p,
                                                      const Teuchos::RCP<Albany::Layouts>& dl) :
-  wBF         (p.get<std::string> ("Weighted BF Name"), dl->node_qp_scalar),
-  wGradBF     (p.get<std::string> ("Weighted Gradient BF Name"), dl->node_qp_gradient),
-  phi         (p.get<std::string> ("Hydraulic Potential QP Variable Name"), dl->qp_scalar),
-  q           (p.get<std::string> ("Discharge QP Variable Name"), dl->qp_gradient),
-  mu_i        (p.get<std::string> ("Ice Viscosity Variable Name"), dl->cell_scalar2),
+  wBF         (p.get<std::string> ("Weighted BF Variable Name"), dl->node_qp_scalar),
   h           (p.get<std::string> ("Drainage Sheet Depth QP Variable Name"), dl->qp_scalar),
+  h_dot       (p.get<std::string> ("Drainage Sheet Depth Dot QP Variable Name"), dl->qp_scalar),
+  N           (p.get<std::string> ("Effective Pressure QP Variable Name"), dl->qp_scalar),
   m           (p.get<std::string> ("Melting Rate QP Variable Name"), dl->qp_scalar),
-  constantRhs (p.get<std::string> ("RHS QP Name"), dl->qp_scalar),
-  residual    (p.get<std::string> ("Residual Name"),dl->node_scalar)
+  u_b         (p.get<std::string> ("Sliding Velocity QP Variable Name"), dl->qp_scalar),
+  mu_i        (p.get<std::string> ("Ice Viscosity Cell Variable Name"), dl->cell_scalar2),
+  residual    (p.get<std::string> ("Residual Evolution Variable Name"),dl->node_scalar)
 {
   this->addDependentField(wBF);
-  this->addDependentField(wGradBF);
-  this->addDependentField(phi);
-  this->addDependentField(q);
   this->addDependentField(h);
+  this->addDependentField(h_dot);
+  this->addDependentField(N);
   this->addDependentField(m);
-  this->addDependentField(constantRhs);
+  this->addDependentField(u_b);
   this->addDependentField(mu_i);
 
   this->addEvaluatedField(residual);
@@ -38,9 +36,7 @@ HydrologyResidual<EvalT, Traits>::HydrologyResidual (const Teuchos::ParameterLis
   Teuchos::ParameterList& hydrology_params = *p.get<Teuchos::ParameterList*>("Hydrology Parameters");
   Teuchos::ParameterList& physical_params  = *p.get<Teuchos::ParameterList*>("Physical Parameters");
 
-  mu_w         = physical_params.get<double>("Water Viscosity");
-  rho_i        = physical_params.get<double>("Ice Density");
-  rho_w        = physical_params.get<double>("Water Density");
+  rho_i = physical_params.get<double>("Ice Density");
 
   if (hydrology_params.get<bool>("Has Melt Opening",false))
   {
@@ -51,28 +47,39 @@ HydrologyResidual<EvalT, Traits>::HydrologyResidual (const Teuchos::ParameterLis
     has_melt_opening = 0.0;
   }
 
+  h_b = hydrology_params.get<double>("Bed Bumps Height");
+  l_b = hydrology_params.get<double>("Bed Bumps Length");
+
+  if (hydrology_params.get<bool>("Use Net Bump Height",false))
+  {
+    use_net_bump_height = 1.0;
+  }
+  else
+  {
+    use_net_bump_height = 0.0;
+  }
+
   std::vector<PHX::DataLayout::size_type> dims;
   dl->node_qp_gradient->dimensions(dims);
   numNodes = dims[1];
   numQPs   = dims[2];
   numDims  = dims[3];
 
-  this->setName("HydrologyResidual"+PHX::typeAsString<EvalT>());
+  this->setName("HydrologyResidualEvolution"+PHX::typeAsString<EvalT>());
 }
 
 //**********************************************************************
 template<typename EvalT, typename Traits>
-void HydrologyResidual<EvalT, Traits>::
+void HydrologyResidualEvolution<EvalT, Traits>::
 postRegistrationSetup(typename Traits::SetupData d,
                       PHX::FieldManager<Traits>& fm)
 {
   this->utils.setFieldData(wBF,fm);
-  this->utils.setFieldData(wGradBF,fm);
-  this->utils.setFieldData(phi,fm);
-  this->utils.setFieldData(q,fm);
   this->utils.setFieldData(h,fm);
+  this->utils.setFieldData(h_dot,fm);
+  this->utils.setFieldData(N,fm);
   this->utils.setFieldData(m,fm);
-  this->utils.setFieldData(constantRhs,fm);
+  this->utils.setFieldData(u_b,fm);
   this->utils.setFieldData(mu_i,fm);
 
   this->utils.setFieldData(residual,fm);
@@ -80,28 +87,24 @@ postRegistrationSetup(typename Traits::SetupData d,
 
 //**********************************************************************
 template<typename EvalT, typename Traits>
-void HydrologyResidual<EvalT, Traits>::evaluateFields (typename Traits::EvalData workset)
+void HydrologyResidualEvolution<EvalT, Traits>::evaluateFields (typename Traits::EvalData workset)
 {
-  ScalarT resRhs, resMass, resStiff;
+  ScalarT resOpening, resClosure, resTimeDer;
 
-  // (rhs,v) - (h/mu_i,phi) + (q,grad(v))
+  // h' = W_O - W_C = (m/rho_i + u_b*(h_b-h)/l_b) - hN/mu_i
   for (int cell=0; cell < workset.numCells; ++cell)
   {
     for (int node=0; node < numNodes; ++node)
     {
-      resRhs = resMass = resStiff = 0.;
+      resOpening = resClosure = resTimeDer = 0.;
       for (int qp=0; qp < numQPs; ++qp)
       {
-        resRhs  += (m(cell,qp)/rho_w - has_melt_opening * m(cell,qp)/rho_i + constantRhs(cell,qp)) * wBF(cell,node,qp);
-        resMass += h(cell,qp)*phi(cell,qp)*wBF(cell,node,qp)/mu_i(cell);
-
-        for (int dim=0; dim<numDims; ++dim)
-        {
-          resStiff += q(cell,qp,dim) * wGradBF(cell,node,qp,dim);
-        }
+        resOpening += (has_melt_opening * m(cell,qp)/rho_i + u_b(cell,qp)*(h_b - use_net_bump_height*h(cell,qp))/l_b) * wBF(cell,node,qp);
+        resClosure += h(cell,qp)*N(cell,qp) * wBF(cell,node,qp)/mu_i(cell);
+        resTimeDer += h_dot(cell,qp) * wBF(cell,node,qp);
       }
 
-      residual (cell,node) = resRhs - resMass + resStiff;
+      residual (cell,node) = resOpening - resClosure - resTimeDer;
     }
   }
 }

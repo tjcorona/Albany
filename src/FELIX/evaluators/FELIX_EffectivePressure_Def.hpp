@@ -14,9 +14,8 @@ template<typename EvalT, typename Traits>
 EffectivePressure<EvalT, Traits>::EffectivePressure (const Teuchos::ParameterList& p,
                                            const Teuchos::RCP<Albany::Layouts>& dl) :
   phi       (p.get<std::string> ("Hydraulic Potential Variable Name"), dl->node_scalar),
-  H         (p.get<std::string> ("Ice Thickness Variable Name"), dl->node_scalar),
-  z_s       (p.get<std::string> ("Surface Height Variable Name"), dl->node_scalar),
-  N         (p.get<std::string> ("Effective Pressure Name"),dl->node_scalar)
+  phi_H     (p.get<std::string> ("Hydrostatic Potential Variable Name"), dl->node_scalar),
+  N         (p.get<std::string> ("Effective Pressure Variable Name"),dl->node_scalar)
 {
   has_phi = p.isParameter("Has Hydraulic Potential") ? p.get<bool>("Has Hydraulic Potential") : false;
 
@@ -32,17 +31,9 @@ EffectivePressure<EvalT, Traits>::EffectivePressure (const Teuchos::ParameterLis
     alpha = p.get<double>("Hydraulic-Over-Hydrostatic Potential Ratio");
   }
 
-  this->addDependentField(H);
-  this->addDependentField(z_s);
+  this->addDependentField(phi_H);
 
   this->addEvaluatedField(N);
-
-  // Setting parameters
-  Teuchos::ParameterList& physical_params  = *p.get<Teuchos::ParameterList*>("Physical Parameters");
-
-  rho_i        = physical_params.get<double>("Ice Density");
-  rho_w        = physical_params.get<double>("Water Density");
-  g            = physical_params.get<double>("Gravity Acceleration");
 
   std::vector<PHX::DataLayout::size_type> dims;
   dl->node_scalar->dimensions(dims);
@@ -59,8 +50,7 @@ postRegistrationSetup(typename Traits::SetupData d,
 {
   if (has_phi)
     this->utils.setFieldData(phi,fm);
-  this->utils.setFieldData(H,fm);
-  this->utils.setFieldData(z_s,fm);
+  this->utils.setFieldData(phi_H,fm);
 
   this->utils.setFieldData(N,fm);
 }
@@ -75,12 +65,19 @@ void EffectivePressure<EvalT, Traits>::evaluateFields (typename Traits::EvalData
     {
       for (int node=0; node < numNodes; ++node)
       {
-        N (cell,node) = rho_w*g*(z_s(cell,node)-H(cell,node)) + rho_i*g*H(cell,node) - phi(cell,node);
+        N (cell,node) = phi_H(cell,node) - phi(cell,node);
       }
     }
   }
   else
   {
+    for (int cell=0; cell < workset.numCells; ++cell)
+    {
+      for (int node=0; node < numNodes; ++node)
+      {
+        N (cell,node) = (1-alpha)*phi_H(cell,node);
+      }
+    }
   }
 }
 

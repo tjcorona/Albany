@@ -18,29 +18,34 @@
 FELIX::Hydrology::Hydrology (const Teuchos::RCP<Teuchos::ParameterList>& params,
                              const Teuchos::RCP<ParamLib>& paramLib,
                              const int numDimensions) :
-  Albany::AbstractProblem (params, paramLib,1),
+  Albany::AbstractProblem (params, paramLib,2),
   numDim (numDimensions)
 {
   TEUCHOS_TEST_FOR_EXCEPTION (numDim!=1 && numDim!=2,std::logic_error,"Problem supports only 1D and 2D");
 
   // Set the num PDEs for the null space object to pass to ML
-  this->setNumEquations(1);
+  this->setNumEquations(2);
 
-  // Need to allocate a fields in mesh database
+  // Need to allocate fields in mesh database
   this->requirements.push_back("surface_height");
   this->requirements.push_back("basal_friction");
   this->requirements.push_back("sliding_velocity");
-  this->requirements.push_back("drainage_sheet_depth");
   this->requirements.push_back("ice_thickness");
   this->requirements.push_back("ice_viscosity");
   this->requirements.push_back("surface_water_input");
   this->requirements.push_back("geothermal_flux");
-//  this->requirements.push_back("effective_pressure");
 
-  dof_names.resize(1);
-  resid_names.resize(1);
-  dof_names[0] = "Hydraulic Potential";
-  resid_names[0] = "Hydrology Residual";
+  dof_names.resize(2);
+  dof_names_dot.resize(1);
+  resid_names.resize(2);
+
+  dof_names[0] = "Drainage Sheet Depth";
+  dof_names[1] = "Hydraulic Potential";
+
+  dof_names_dot[0] = "Drainage Sheet Depth Dot";
+
+  resid_names[0] = "Hydrology Residual Evolution";
+  resid_names[1] = "Hydrology Residual Mass";
 }
 
 FELIX::Hydrology::~Hydrology()
@@ -85,7 +90,7 @@ void FELIX::Hydrology::constructDirichletEvaluators (const Albany::MeshSpecsStru
 {
   // Construct Dirichlet evaluators for all nodesets and names
   std::vector<std::string> dirichletNames(neq);
-  dirichletNames[0] = dof_names[0];
+  dirichletNames[0] = dof_names[1];
 
   Albany::BCUtils<Albany::DirichletTraits> dirUtils;
   dfm = dirUtils.constructBCEvaluators(meshSpecs.nsNames, dirichletNames, this->params, this->paramLib);
@@ -111,10 +116,11 @@ void FELIX::Hydrology::constructNeumannEvaluators (const Teuchos::RCP<Albany::Me
   Teuchos::Array<Teuchos::Array<int> > offsets;
   offsets.resize(1);
 
-  neumannNames[0] = "Hydraulic Potential";
-  neumannNames[1] = "all";
-  offsets[0].resize(1);
+  neumannNames[1] = "Hydraulic Potential";
+  neumannNames[2] = "all";
+  offsets[0].resize(2);
   offsets[0][0] = 0;
+  offsets[0][1] = 1;
 
   // Construct BC evaluators for all possible names of conditions
   std::vector<std::string> condNames(1);

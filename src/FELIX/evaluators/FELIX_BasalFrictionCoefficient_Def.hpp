@@ -35,9 +35,6 @@ BasalFrictionCoefficient<EvalT, Traits>::BasalFrictionCoefficient (const Teuchos
   std::string betaType = (beta_list->isParameter("Type") ? beta_list->get<std::string>("Type") : "From File");
 
   mu    = beta_list->get<double>("Coulomb Friction Coefficient");
-  alpha = beta_list->get<double>("Water Pressure Fraction");
-  rho   = physics->get<double>("Ice Density");
-  g     = physics->get<double>("Gravity Acceleration");
 
   if (betaType == "From File")
   {
@@ -65,9 +62,9 @@ BasalFrictionCoefficient<EvalT, Traits>::BasalFrictionCoefficient (const Teuchos
             << "    - p  (Power Exponent): " << power << "\n";
 #endif
 
-    thickness = PHX::MDField<ScalarT,Cell,Node>(p.get<std::string> ("thickness Field Name"), dl->node_scalar);
-    u_norm    = PHX::MDField<ScalarT,Cell,Node>(p.get<std::string> ("Velocity Norm Name"), dl->node_scalar);
-    this->addDependentField (thickness);
+    N      = PHX::MDField<ScalarT,Cell,Node>(p.get<std::string> ("Effective Pressure Variable Name"), dl->node_scalar);
+    u_norm = PHX::MDField<ScalarT,Cell,Node>(p.get<std::string> ("Velocity Norm Variable Name"), dl->node_scalar);
+    this->addDependentField (N);
     this->addDependentField (u_norm);
   }
   else if (betaType == "Regularized Coulomb")
@@ -85,9 +82,9 @@ BasalFrictionCoefficient<EvalT, Traits>::BasalFrictionCoefficient (const Teuchos
             << "    - p  (Power Exponent): " << power << "\n";
 #endif
 
-    thickness = PHX::MDField<ScalarT,Cell,Node>(p.get<std::string> ("thickness Field Name"), dl->node_scalar);
-    u_norm    = PHX::MDField<ScalarT,Cell,Node>(p.get<std::string> ("Velocity Norm Name"), dl->node_scalar);
-    this->addDependentField (thickness);
+    N      = PHX::MDField<ScalarT,Cell,Node>(p.get<std::string> ("Effective Pressure Variable Name"), dl->node_scalar);
+    u_norm = PHX::MDField<ScalarT,Cell,Node>(p.get<std::string> ("Velocity Norm Variable Name"), dl->node_scalar);
+    this->addDependentField (N);
     this->addDependentField (u_norm);
   }
   else if (betaType == "Piecewise Linear")
@@ -157,7 +154,7 @@ BasalFrictionCoefficient<EvalT, Traits>::BasalFrictionCoefficient (const Teuchos
 #endif
     }
 
-    u_norm  = PHX::MDField<ScalarT,Cell,Node>(p.get<std::string> ("Velocity Norm Name"), dl->node_scalar);
+    u_norm  = PHX::MDField<ScalarT,Cell,Node>(p.get<std::string> ("Velocity Norm Variable Name"), dl->node_scalar);
     this->addDependentField (u_norm);
   }
   else

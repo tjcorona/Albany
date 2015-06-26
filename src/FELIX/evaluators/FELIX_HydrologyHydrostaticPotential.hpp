@@ -40,13 +40,13 @@ public:
 private:
 
   // Input:
-  PHX::MDField<ScalarT,Cell,QuadPoint>      z_s;
-  PHX::MDField<ScalarT,Cell,QuadPoint>      H;
+  PHX::MDField<ScalarT,Cell,Node>      z_s;
+  PHX::MDField<ScalarT,Cell,Node>      H;
 
   // Output:
-  PHX::MDField<ScalarT,Cell,QuadPoint>      phi_H;
+  PHX::MDField<ScalarT,Cell,Node>      phi_H;
 
-  int numQPs;
+  int numNodes;
 
   double rho_i;
   double rho_w;

@@ -32,7 +32,7 @@ FELIX::StokesFO::StokesFO (const Teuchos::RCP<Teuchos::ParameterList>& params_,
   // Set the num PDEs for the null space object to pass to ML
   this->rigidBodyModes->setNumPDEs(neq);
 
-  // Need to allocate a fields in mesh database
+  // Need to allocate fields in mesh database
   Teuchos::Array<std::string> req = params->get<Teuchos::Array<std::string> > ("Required Fields");
   for (int i(0); i<req.size(); ++i)
     this->requirements.push_back(req[i]);

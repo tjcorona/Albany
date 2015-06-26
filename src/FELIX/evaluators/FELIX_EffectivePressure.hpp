@@ -41,8 +41,7 @@ private:
 
   // Input:
   PHX::MDField<ScalarT,Cell,Node> phi;
-  PHX::MDField<ScalarT,Cell,Node> H;
-  PHX::MDField<ScalarT,Cell,Node> z_s;
+  PHX::MDField<ScalarT,Cell,Node> phi_H;
 
   // Output:
   PHX::MDField<ScalarT,Cell,Node> N;
@@ -51,9 +50,6 @@ private:
 
   bool   has_phi;
   double alpha;
-  double rho_i;
-  double rho_w;
-  double g;
 };
 
 } // Namespace FELIX

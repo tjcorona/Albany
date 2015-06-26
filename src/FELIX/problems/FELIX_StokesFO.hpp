@@ -582,7 +582,6 @@ FELIX::StokesFO::buildBasalFrictionCoefficientEvaluator ()
   //Input fields
   p->set<std::string>("Velocity Norm Variable Name", "Velocity Norm");
   p->set<std::string>("Given Beta Variable Name", "basal_friction");
-  p->set<std::string>("Ice Thickness Variable Name", "thickness");
   p->set<std::string>("Effective Pressure Variable Name", "N");
 
   //Input physics parameters

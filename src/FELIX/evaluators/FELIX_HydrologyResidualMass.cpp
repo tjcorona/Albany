@@ -6,7 +6,7 @@
 
 #include "PHAL_AlbanyTraits.hpp"
 
-#include "FELIX_HydrologyRhs.hpp"
-#include "FELIX_HydrologyRhs_Def.hpp"
+#include "FELIX_HydrologyResidualMass.hpp"
+#include "FELIX_HydrologyResidualMass_Def.hpp"
 
-PHAL_INSTANTIATE_TEMPLATE_CLASS(FELIX::HydrologyRhs)
+PHAL_INSTANTIATE_TEMPLATE_CLASS(FELIX::HydrologyResidualMass)

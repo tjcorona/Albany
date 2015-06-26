@@ -14,8 +14,8 @@
        evaluators/FELIX_HydrologyDischarge.cpp
        evaluators/FELIX_HydrologyHydrostaticPotential.cpp
        evaluators/FELIX_HydrologyMelting.cpp
-       evaluators/FELIX_HydrologyResidual.cpp
-       evaluators/FELIX_HydrologyRhs.cpp
+       evaluators/FELIX_HydrologyResidualEvolution.cpp
+       evaluators/FELIX_HydrologyResidualMass.cpp
        evaluators/FELIX_QuadPointsToCellInterpolation.cpp
        evaluators/FELIX_SaveSideSetStateField.cpp
        evaluators/FELIX_StokesMomentumResid.cpp
@@ -68,10 +68,10 @@ ENDIF()
        evaluators/FELIX_HydrologyHydrostaticPotential_Def.hpp
        evaluators/FELIX_HydrologyMelting.hpp
        evaluators/FELIX_HydrologyMelting_Def.hpp
-       evaluators/FELIX_HydrologyResidual.hpp
-       evaluators/FELIX_HydrologyResidual_Def.hpp
-       evaluators/FELIX_HydrologyRhs.hpp
-       evaluators/FELIX_HydrologyRhs_Def.hpp
+       evaluators/FELIX_HydrologyResidualEvolution.hpp
+       evaluators/FELIX_HydrologyResidualEvolution_Def.hpp
+       evaluators/FELIX_HydrologyResidualMass.hpp
+       evaluators/FELIX_HydrologyResidualMass_Def.hpp
        evaluators/FELIX_QuadPointsToCellInterpolation.hpp
        evaluators/FELIX_QuadPointsToCellInterpolation_Def.hpp
        evaluators/FELIX_SaveSideSetStateField.hpp

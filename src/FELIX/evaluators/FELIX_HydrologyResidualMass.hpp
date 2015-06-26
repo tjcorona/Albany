@@ -4,8 +4,8 @@
 //    in the file "license.txt" in the top-level Albany directory  //
 //*****************************************************************//
 
-#ifndef FELIX_HYDROLOGY_RHS_HPP
-#define FELIX_HYDROLOGY_RHS_HPP 1
+#ifndef FELIX_HYDROLOGY_RESIDUAL_MASS_HPP
+#define FELIX_HYDROLOGY_RESIDUAL_MASS_HPP 1
 
 #include "Phalanx_config.hpp"
 #include "Phalanx_Evaluator_WithBaseImpl.hpp"
@@ -16,21 +16,21 @@
 namespace FELIX
 {
 
-/** \brief Hydrology Residual Evaluator
+/** \brief Hydrology Mass Equation Residual Evaluator
 
     This evaluator evaluates the residual of the Hydrology model
 */
 
 template<typename EvalT, typename Traits>
-class HydrologyRhs : public PHX::EvaluatorWithBaseImpl<Traits>,
+class HydrologyResidualMass : public PHX::EvaluatorWithBaseImpl<Traits>,
                           public PHX::EvaluatorDerived<EvalT, Traits>
 {
 public:
 
   typedef typename EvalT::ScalarT ScalarT;
 
-  HydrologyRhs (const Teuchos::ParameterList& p,
-                const Teuchos::RCP<Albany::Layouts>& dl);
+  HydrologyResidualMass (const Teuchos::ParameterList& p,
+                     const Teuchos::RCP<Albany::Layouts>& dl);
 
   void postRegistrationSetup (typename Traits::SetupData d,
                               PHX::FieldManager<Traits>& fm);
@@ -42,23 +42,23 @@ private:
   typedef typename EvalT::MeshScalarT MeshScalarT;
 
   // Input:
-  PHX::MDField<ScalarT,Cell>            mu_i;
-  PHX::MDField<ScalarT,Cell,QuadPoint>  h;
-  PHX::MDField<ScalarT,Cell,QuadPoint>  phi_H;
-  PHX::MDField<ScalarT,Cell,QuadPoint>  u_b;
-  PHX::MDField<ScalarT,Cell,QuadPoint>  omega;
+  PHX::MDField<MeshScalarT,Cell,Node,QuadPoint>     wBF;
+  PHX::MDField<MeshScalarT,Cell,Node,QuadPoint,Dim> wGradBF;
+  PHX::MDField<ScalarT,Cell,QuadPoint,Dim>          q;
+  PHX::MDField<ScalarT,Cell,QuadPoint>              h_dot;
+  PHX::MDField<ScalarT,Cell,QuadPoint>              m;
+  PHX::MDField<ScalarT,Cell,QuadPoint>              omega;
 
   // Output:
-  PHX::MDField<ScalarT,Cell,QuadPoint>  rhs;
+  PHX::MDField<ScalarT,Cell,Node> residual;
 
+  unsigned int numNodes;
   unsigned int numQPs;
+  unsigned int numDims;
 
-  ScalarT h_b;
-  ScalarT l_b;
-
-  double use_net_bump_height;
+  double rho_w;
 };
 
 } // Namespace FELIX
 
-#endif // FELIX_HYDROLOGY_RHS_HPP
+#endif // FELIX_HYDROLOGY_RESIDUAL_MASS_HPP
