@@ -291,16 +291,17 @@ void velocity_solver_extrude_3d_grid(int nLayers, int nGlobalTriangles,
     paramList->sublist("Problem").set("Time Step", paramList->sublist("Problem").get("Time Step", 0.0)); //if it is not there set it to zero.
   }
 
-  Teuchos::RCP<Teuchos::Array<double> >inputArrayBasal = Teuchos::rcp(new Teuchos::Array<double> (1, 1.0));
+  Teuchos::RCP<Teuchos::Array<double> >inputArrayBasal = Teuchos::rcp(new Teuchos::Array<double> (5, 0.0));
   paramList->sublist("Problem").sublist("Neumann BCs").set("Cubature Degree", 3);
-  paramList->sublist("Problem").sublist("Neumann BCs").set("NBC on SS basalside for DOF all set basal_scalar_field", *inputArrayBasal);
+  paramList->sublist("Problem").sublist("Neumann BCs").set("NBC on SS basalside for DOF all set basal", *inputArrayBasal);
+  paramList->sublist("Problem").sublist("Neumann BCs").set("BetaXY", "Power Law Scalar Field");
 
   //Lateral floating ice BCs
   Teuchos::RCP<Teuchos::Array<double> >inputArrayLateral = Teuchos::rcp(new Teuchos::Array<double> (1, MPAS_rho_ice/MPAS_rho_seawater));
   paramList->sublist("Problem").sublist("Neumann BCs").set("NBC on SS floatinglateralside for DOF all set lateral", *inputArrayLateral);
 
   //Dirichlet BCs
-  paramList->sublist("Problem").sublist("Dirichlet BCs").set("DBC on NS dirichlet for DOF U0 prescribe Field", "dirichlet_field");
+  //paramList->sublist("Problem").sublist("Dirichlet BCs").set("DBC on NS dirichlet for DOF U0 prescribe Field", "dirichlet_field");
   paramList->sublist("Problem").sublist("Dirichlet BCs").set("DBC on NS dirichlet for DOF U1 prescribe Field", "dirichlet_field");
   paramList->sublist("Discretization").set("Method", "Extruded");
 
