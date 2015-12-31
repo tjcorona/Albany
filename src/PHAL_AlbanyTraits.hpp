@@ -13,12 +13,7 @@
 #include "Sacado_mpl_find.hpp"
 
 // traits Base Class
-#ifdef ALBANY_USE_PUBLICTRILINOS
-#include "Albany_PublicTrilinosTrickery.hpp"
-#include "Phalanx_Traits_Base.hpp"
-#else
 #include "Phalanx_Traits.hpp"
-#endif
 
 // Include User Data Types
 #include "Phalanx_config.hpp"
@@ -181,54 +176,6 @@ namespace PHAL {
     typedef Workset& PreEvalData;
     typedef Workset& PostEvalData;
  
-#ifdef ALBANY_USE_PUBLICTRILINOS
-    // Maps the key EvalType a vector of DataTypes
-#ifdef ALBANY_SG
-#ifdef ALBANY_ENSEMBLE 
-    typedef boost::mpl::map<
-      boost::mpl::pair<Residual, ResidualDataTypes>,
-      boost::mpl::pair<Jacobian, JacobianDataTypes>,
-      boost::mpl::pair<Tangent,  TangentDataTypes>,
-      boost::mpl::pair<DistParamDeriv, DistParamDerivDataTypes>,
-      boost::mpl::pair<SGResidual, SGResidualDataTypes>,
-      boost::mpl::pair<SGJacobian, SGJacobianDataTypes>,
-      boost::mpl::pair<SGTangent,  SGTangentDataTypes>,
-      boost::mpl::pair<MPResidual, MPResidualDataTypes>,
-      boost::mpl::pair<MPJacobian, MPJacobianDataTypes>,
-      boost::mpl::pair<MPTangent,  MPTangentDataTypes >
-    >::type EvalToDataMap;
-#else
-    typedef boost::mpl::map<
-      boost::mpl::pair<Residual, ResidualDataTypes>,
-      boost::mpl::pair<Jacobian, JacobianDataTypes>,
-      boost::mpl::pair<Tangent,  TangentDataTypes>,
-      boost::mpl::pair<DistParamDeriv, DistParamDerivDataTypes>,
-      boost::mpl::pair<SGResidual, SGResidualDataTypes>,
-      boost::mpl::pair<SGJacobian, SGJacobianDataTypes>,
-      boost::mpl::pair<SGTangent,  MPTangentDataTypes >
-    >::type EvalToDataMap;
-#endif
-#else
-#ifdef ALBANY_ENSEMBLE 
-    typedef boost::mpl::map<
-      boost::mpl::pair<Residual, ResidualDataTypes>,
-      boost::mpl::pair<Jacobian, JacobianDataTypes>,
-      boost::mpl::pair<Tangent,  TangentDataTypes>,
-      boost::mpl::pair<DistParamDeriv, DistParamDerivDataTypes>,
-      boost::mpl::pair<MPResidual, MPResidualDataTypes>,
-      boost::mpl::pair<MPJacobian, MPJacobianDataTypes>,
-      boost::mpl::pair<MPTangent,  MPTangentDataTypes >
-    >::type EvalToDataMap;
-#else
-    typedef boost::mpl::map<
-      boost::mpl::pair<Residual, ResidualDataTypes>,
-      boost::mpl::pair<Jacobian, JacobianDataTypes>,
-      boost::mpl::pair<Tangent,  TangentDataTypes>,
-      boost::mpl::pair<DistParamDeriv, DistParamDerivDataTypes>
-    >::type EvalToDataMap;
-#endif
-#endif
-#endif // ALBANY_USE_PUBLICTRILINOS
   };
 }
 

@@ -4,14 +4,14 @@
 //    in the file "license.txt" in the top-level Albany directory  //
 //*****************************************************************//
 
-#if !defined(Intrepid_MiniTensor_Solvers_h)
-#define Intrepid_MiniTensor_Solvers_h
+#if !defined(Intrepid2_MiniTensor_Solvers_h)
+#define Intrepid2_MiniTensor_Solvers_h
 
 #include <utility>
 
-#include <Intrepid_MiniTensor.h>
+#include <Intrepid2_MiniTensor.h>
 
-namespace Intrepid
+namespace Intrepid2
 {
 /// The Fad type to use.
 template<typename T, int N>
@@ -315,7 +315,7 @@ struct LineSearchRegularizedStep : public Step_Base<T>
   hessian_singular_tol{1.0e-12};
 };
 
-} // namespace Intrepid
+} // namespace Intrepid2
 
 #include "Intrepid_MiniTensor_Solvers.t.h"
 
