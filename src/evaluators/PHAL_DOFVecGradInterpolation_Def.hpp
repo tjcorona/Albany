@@ -85,8 +85,9 @@ namespace PHAL {
   evaluateFields(typename Traits::EvalData workset)
   {
 #ifndef ALBANY_KOKKOS_UNDER_DEVELOPMENT
-    // This is needed, since evaluate currently sums into    
-   Kokkos::deep_copy(grad_val_qp.get_kokkos_view(), 0.0);
+    // This is needed, since evaluate currently sums into
+    // TJC: commenting this out so I can compile
+   // Kokkos::deep_copy(grad_val_qp.get_kokkos_view(), 0.0);
 
     for (std::size_t cell=0; cell < workset.numCells; ++cell) {
         for (std::size_t qp=0; qp < numQPs; ++qp) {
@@ -96,10 +97,10 @@ namespace PHAL {
               grad_val_qp(cell,qp,i,dim) = val_node(cell, 0, i) * GradBF(cell, 0, qp, dim);
               for (std::size_t node= 1 ; node < numNodes; ++node) {
                 grad_val_qp(cell,qp,i,dim) += val_node(cell, node, i) * GradBF(cell, node, qp, dim);
-            } 
-          } 
-        } 
-      } 
+            }
+          }
+        }
+      }
     }
 
     //  Intrepid2::FunctionSpaceTools::evaluate<ScalarT>(grad_val_qp, val_node, GradBF);
@@ -107,7 +108,7 @@ namespace PHAL {
 
 #ifdef ALBANY_TIMER
  PHX::Device::fence();
- auto start = std::chrono::high_resolution_clock::now(); 
+ auto start = std::chrono::high_resolution_clock::now();
 #endif
   //Kokkos::deep_copy(grad_val_qp.get_kokkos_view(), 0.0);
   Kokkos::parallel_for(DOFVecGradInterpolation_Residual_Policy(0,workset.numCells),*this);
@@ -122,7 +123,7 @@ namespace PHAL {
 
 #endif
   }
-  
+
   // Specializations for all 3 Jacobian types are identical
   //**********************************************************************
   template<typename Traits>
@@ -178,9 +179,9 @@ namespace PHAL {
                 (grad_val_qp(cell,qp,i,dim)).val() += val_node(cell, node, i).val() * GradBF(cell, node, qp, dim);
                 (grad_val_qp(cell,qp,i,dim)).fastAccessDx(neq*node+offset+i) += val_node(cell, node, i).fastAccessDx(neq*node+offset+i) * GradBF(cell, node, qp, dim);
            }
-         } 
-        } 
-      } 
+         }
+        }
+      }
 
   }
 #endif
@@ -211,9 +212,9 @@ namespace PHAL {
                 (grad_val_qp(cell,qp,i,dim)).fastAccessDx(neq*node+offset+i) += val_node(cell, node, i).fastAccessDx(neq*node+offset+i) * GradBF(cell, node, qp, dim);
 #endif
            }
-         } 
-        } 
-      } 
+         }
+        }
+      }
     }
     //  Intrepid2::FunctionSpaceTools::evaluate<ScalarT>(grad_val_qp, val_node, GradBF);
 
@@ -295,14 +296,14 @@ namespace PHAL {
                 (grad_val_qp(cell,qp,i,dim)).val() += val_node(cell, node, i).val() * GradBF(cell, node, qp, dim);
                 (grad_val_qp(cell,qp,i,dim)).fastAccessDx(neq*node+offset+i) += val_node(cell, node, i).fastAccessDx(neq*node+offset+i) * GradBF(cell, node, qp, dim);
            }
-         } 
-        } 
-      } 
+         }
+        }
+      }
     }
     //  Intrepid2::FunctionSpaceTools::evaluate<ScalarT>(grad_val_qp, val_node, GradBF);
 
 /*#else
-  
+
    //Kokkos::deep_copy(grad_val_qp.get_kokkos_view(), ScalarT(0.0));
    Kokkos::parallel_for ( workset.numCells,  VecGradInterpolationJacobian <ScalarT,  PHX::Device, PHX::MDField<MeshScalarT,Cell,Node,QuadPoint,Dim>, PHX::MDField<ScalarT,Cell,Node,VecDim>,  PHX::MDField<ScalarT,Cell,QuadPoint,VecDim,Dim>  >(GradBF, val_node, grad_val_qp, numQPs, numNodes, numDims, vecDim, offset));
 #endif
@@ -368,20 +369,20 @@ namespace PHAL {
                 (grad_val_qp(cell,qp,i,dim)).val() += val_node(cell, node, i).val() * GradBF(cell, node, qp, dim);
                 (grad_val_qp(cell,qp,i,dim)).fastAccessDx(neq*node+offset+i) += val_node(cell, node, i).fastAccessDx(neq*node+offset+i) * GradBF(cell, node, qp, dim);
            }
-         } 
-        } 
-      } 
+         }
+        }
+      }
     }
     //  Intrepid2::FunctionSpaceTools::evaluate<ScalarT>(grad_val_qp, val_node, GradBF);
 
 /*#else
-  
+
    //Kokkos::deep_copy(grad_val_qp.get_kokkos_view(), ScalarT(0.0));
    Kokkos::parallel_for ( workset.numCells,  VecGradInterpolationJacobian <ScalarT,  PHX::Device, PHX::MDField<MeshScalarT,Cell,Node,QuadPoint,Dim>, PHX::MDField<ScalarT,Cell,Node,VecDim>,  PHX::MDField<ScalarT,Cell,QuadPoint,VecDim,Dim>  >(GradBF, val_node, grad_val_qp, numQPs, numNodes, numDims, vecDim, offset));
 #endif
 */
   }
 #endif
-  
+
   //**********************************************************************
 }
