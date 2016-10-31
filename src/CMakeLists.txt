@@ -706,6 +706,7 @@ include_directories (${Trilinos_INCLUDE_DIRS}
                      ./LCM/evaluators/transport
                      ./LCM/evaluators/HMC
                      ./LCM/models
+                     ./LCM/problems
                      ./LCM/utils
                      ./LCM/utils/topology
                      ./FELIX/problems
