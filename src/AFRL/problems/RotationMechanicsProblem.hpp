@@ -19,10 +19,12 @@
 #include "PHAL_Dimension.hpp"
 #include "PHAL_AlbanyTraits.hpp"
 
+#include "Intrepid2_DefaultCubatureFactory.hpp"
+
 #include "AAdapt_RC_Manager.hpp"
 #include "MaterialDatabase.h"
 
-static int rm_dir_count = 0; //counter for registration of dirichlet_field
+static int rot_dir_count = 0; //counter for registration of dirichlet_field
 
 namespace Albany
 {
@@ -35,7 +37,7 @@ class RotationMechanicsProblem: public Albany::AbstractProblem
 {
 public:
 
-  typedef Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device> FC;
+  typedef Kokkos::DynRankView<RealType, PHX::Device> FC;
 
   ///
   /// Default constructor
@@ -380,7 +382,7 @@ protected:
 #include "SurfaceScalarGradientOperator.hpp"
 #include "SurfaceVectorResidual.hpp"
 #include "CurrentCoords.hpp"
-#include "TvergaardHutchinson.hpp"
+// #include "TvergaardHutchinson.hpp"
 #include "MeshSizeField.hpp"
 //#include "SurfaceCohesiveResidual.hpp"
 
@@ -449,7 +451,7 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
     const Teuchos::RCP<Teuchos::ParameterList>& responseList)
 {
   typedef Teuchos::RCP<
-      Intrepid2::Basis<RealType, Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device>>>
+      Intrepid2::Basis<PHX::Device, RealType, RealType> >
   Intrepid2Basis;
 
   // Collect problem-specific response parameters
@@ -585,16 +587,16 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
       meshSpecs.ctd.dimension == 3 &&
       meshSpecs.ctd.node_count == 10) cellType = comp_cellType;
 
-  Intrepid2::DefaultCubatureFactory<RealType, Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device> > cubFactory;
-  Teuchos::RCP<Intrepid2::Cubature<RealType, Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device> >> cubature =
-      cubFactory.create(*cellType, meshSpecs.cubatureDegree);
+  Intrepid2::DefaultCubatureFactory cubFactory;
+  Teuchos::RCP<Intrepid2::Cubature<PHX::Device>  > cubature =
+      cubFactory.create<PHX::Device, RealType, RealType>(*cellType, meshSpecs.cubatureDegree);
 
   // FIXME, this could probably go into the ProblemUtils
   // just like the call to getIntrepid2Basis
   Intrepid2Basis
   surfaceBasis;
   Teuchos::RCP<shards::CellTopology> surfaceTopology;
-  Teuchos::RCP<Intrepid2::Cubature<RealType,Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device> >> surfaceCubature;
+  Teuchos::RCP<Intrepid2::Cubature<PHX::Device>> surfaceCubature;
   if (surface_element)
   {
 #ifdef ALBANY_VERBOSE
@@ -605,38 +607,35 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
     if (name == "Triangle_3" || name == "Quadrilateral_4") {
       surfaceBasis =
           Teuchos::rcp(
-              new Intrepid2::Basis_HGRAD_LINE_C1_FEM<RealType,
-                  Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device>>());
+              new Intrepid2::Basis_HGRAD_LINE_C1_FEM<PHX::Device>());
       surfaceTopology =
           Teuchos::rcp(
               new shards::CellTopology(
                   shards::getCellTopologyData<shards::Line<2>>()));
       surfaceCubature =
-          cubFactory.create(*surfaceTopology, meshSpecs.cubatureDegree);
+          cubFactory.create<PHX::Device>(*surfaceTopology, meshSpecs.cubatureDegree);
     }
     else if (name == "Wedge_6") {
       surfaceBasis =
           Teuchos::rcp(
-              new Intrepid2::Basis_HGRAD_TRI_C1_FEM<RealType,
-                  Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device>>());
+              new Intrepid2::Basis_HGRAD_TRI_C1_FEM<PHX::Device>());
       surfaceTopology =
           Teuchos::rcp(
               new shards::CellTopology(
                   shards::getCellTopologyData<shards::Triangle<3>>()));
       surfaceCubature =
-          cubFactory.create(*surfaceTopology, meshSpecs.cubatureDegree);
+          cubFactory.create<PHX::Device>(*surfaceTopology, meshSpecs.cubatureDegree);
     }
     else if (name == "Hexahedron_8") {
       surfaceBasis =
           Teuchos::rcp(
-              new Intrepid2::Basis_HGRAD_QUAD_C1_FEM<RealType,
-                  Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device>>());
+              new Intrepid2::Basis_HGRAD_QUAD_C1_FEM<PHX::Device>());
       surfaceTopology =
           Teuchos::rcp(
               new shards::CellTopology(
                   shards::getCellTopologyData<shards::Quadrilateral<4>>()));
       surfaceCubature =
-          cubFactory.create(*surfaceTopology, meshSpecs.cubatureDegree);
+          cubFactory.create<PHX::Device>(*surfaceTopology, meshSpecs.cubatureDegree);
     }
 
 #ifdef ALBANY_VERBOSE
@@ -1225,13 +1224,13 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
     }
   // IKT, 3/27/16: register dirichlet_field for specifying Dirichlet data from a field
   // in the input exodus mesh.
-  if (rm_dir_count == 0){ //constructEvaluators gets called multiple times for different specializations.
+  if (rot_dir_count == 0){ //constructEvaluators gets called multiple times for different specializations.
                        //Make sure dirichlet_field gets registered only once via counter.
                        //I don't quite understand why this is needed for LCM but not for FELIX...
     //dirichlet_field
     Albany::StateStruct::MeshFieldEntity entity = Albany::StateStruct::NodalDistParameter;
     stateMgr.registerStateVariable("dirichlet_field", dl_->node_vector, eb_name, true, &entity, "");
-    rm_dir_count++;
+    rot_dir_count++;
   }
 
   if (have_mech_eq_) { // Current Coordinates
@@ -1250,14 +1249,14 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
         new Teuchos::ParameterList("Isotropic Mesh Size Field"));
     p->set<std::string>("IsoTropic MeshSizeField Name", "IsoMeshSizeField");
     p->set<std::string>("Current Coordinates Name", "Current Coordinates");
-    p->set<Teuchos::RCP<Intrepid2::Cubature<RealType, Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device> >>>("Cubature", cubature);
+    p->set<Teuchos::RCP<Intrepid2::Cubature<PHX::Device> > >("Cubature", cubature);
 
     // Get the Adaptation list and send to the evaluator
     Teuchos::ParameterList& paramList = params->sublist("Adaptation");
     p->set<Teuchos::ParameterList*>("Parameter List", &paramList);
 
     p->set<const Teuchos::RCP<
-      Intrepid2::Basis<RealType, Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device>>>>("Intrepid2 Basis", intrepidBasis);
+      Intrepid2::Basis<PHX::Device, RealType, RealType> >>("Intrepid2 Basis", intrepidBasis);
     ev = Teuchos::rcp(
         new LCM::IsoMeshSizeField<EvalT, PHAL::AlbanyTraits>(*p, dl_));
     fm0.template registerEvaluator<EvalT>(ev);
@@ -1549,7 +1548,7 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
 
       // inputs
       p->set<std::string>("Reference Coordinates Name", "Coord Vec");
-      p->set<Teuchos::RCP<Intrepid2::Cubature<RealType, Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device> >>>(
+      p->set<Teuchos::RCP<Intrepid2::Cubature<PHX::Device> > >(
           "Cubature",
           surfaceCubature);
       p->set<Intrepid2Basis>("Intrepid2 Basis", surfaceBasis);
@@ -1575,7 +1574,7 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
           new Teuchos::ParameterList("Surface Vector Jump"));
 
       // inputs
-      p->set<Teuchos::RCP<Intrepid2::Cubature<RealType, Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device> >>>(
+      p->set<Teuchos::RCP<Intrepid2::Cubature<PHX::Device> > >(
           "Cubature",
           surfaceCubature);
       p->set<Intrepid2Basis>("Intrepid2 Basis", surfaceBasis);
@@ -1596,7 +1595,7 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
           new Teuchos::ParameterList("Surface Scalar Jump"));
 
       // inputs
-      p->set<Teuchos::RCP<Intrepid2::Cubature<RealType,Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device> >>>(
+      p->set<Teuchos::RCP<Intrepid2::Cubature<PHX::Device>>>(
           "Cubature",
           surfaceCubature);
       p->set<Intrepid2Basis>("Intrepid2 Basis", surfaceBasis);
@@ -1656,7 +1655,7 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
       p->set<RealType>(
           "Average J Stabilization Parameter",
           volume_average_stabilization_param);
-      p->set<Teuchos::RCP<Intrepid2::Cubature<RealType,Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device> >>>(
+      p->set<Teuchos::RCP<Intrepid2::Cubature<PHX::Device>>>(
           "Cubature",
           surfaceCubature);
       p->set<std::string>("Weights Name", "Weights");
@@ -1720,7 +1719,7 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
           new Teuchos::ParameterList("Surface Scalar Gradient Operator"));
       // inputs
       p->set<RealType>("thickness", thickness);
-      p->set<Teuchos::RCP<Intrepid2::Cubature<RealType,Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device> >>>(
+      p->set<Teuchos::RCP<Intrepid2::Cubature<PHX::Device>>>(
           "Cubature",
           surfaceCubature);
       p->set<Intrepid2Basis>("Intrepid2 Basis", surfaceBasis);
@@ -1757,7 +1756,7 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
           new Teuchos::ParameterList("Surface Scalar Gradient Operator"));
       // inputs
       p->set<RealType>("thickness", thickness);
-      p->set<Teuchos::RCP<Intrepid2::Cubature<RealType, Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device> >>>(
+      p->set<Teuchos::RCP<Intrepid2::Cubature<PHX::Device> > >(
           "Cubature",
           surfaceCubature);
       p->set<Intrepid2Basis>("Intrepid2 Basis", surfaceBasis);
@@ -1795,7 +1794,7 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
           new Teuchos::ParameterList("Surface Scalar Gradient Operator"));
       // inputs
       p->set<RealType>("thickness", thickness);
-      p->set<Teuchos::RCP<Intrepid2::Cubature<RealType, Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device> >>>(
+      p->set<Teuchos::RCP<Intrepid2::Cubature<PHX::Device> > >(
           "Cubature",
           surfaceCubature);
       p->set<Intrepid2Basis>("Intrepid2 Basis", surfaceBasis);
@@ -1833,7 +1832,7 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
 
         // inputs
         p->set<RealType>("thickness", thickness);
-        p->set<Teuchos::RCP<Intrepid2::Cubature<RealType, Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device> >>>("Cubature",
+        p->set<Teuchos::RCP<Intrepid2::Cubature<PHX::Device> > >("Cubature",
             surfaceCubature);
         p->set<Intrepid2Basis>("Intrepid2 Basis", surfaceBasis);
 
@@ -1932,22 +1931,32 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
         output_flag =
             material_db_->getElementBlockParam<bool>(eb_name,
                 "Output Deformation Gradient");
+      // MJJ (06/17/2016) I want to save the old values of the deformation
+      // gradient
+      // optional output
+      bool old_defgrad_flag(false);
+      if (material_db_->isElementBlockParam(eb_name,
+          "Old Deformation Gradient"))
+        old_defgrad_flag =
+            material_db_->getElementBlockParam<bool>(eb_name,
+                "Old Deformation Gradient");
+      if (output_flag || old_defgrad_flag)
+            {
 
-      if (output_flag) {
-        p = stateMgr.registerStateVariable(defgrad,
-            dl_->qp_tensor,
-            dl_->dummy,
-            eb_name,
-            "identity",
-            1.0,
-            false,
-            output_flag);
-        ev = Teuchos::rcp(
-            new PHAL::SaveStateField<EvalT, PHAL::AlbanyTraits>(*p));
-        fm0.template registerEvaluator<EvalT>(ev);
-      }
+                p = stateMgr.registerStateVariable(defgrad,
+                                                   dl_->qp_tensor,
+                                                   dl_->dummy,
+                                                   eb_name,
+                                                   "identity",
+                                                   1.0,
+                                                   old_defgrad_flag,
+                                                   output_flag);
+                ev = Teuchos::rcp(
+                                  new PHAL::SaveStateField<EvalT, PHAL::AlbanyTraits>(*p));
+                fm0.template registerEvaluator<EvalT>(ev);
+            }
 
-            // optional output of the integration weights
+      // optional output of the integration weights
       output_flag = false;
       if (material_db_->isElementBlockParam(eb_name,
         "Output Integration Weights"))
@@ -1973,19 +1982,43 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
       if (material_db_->isElementBlockParam(eb_name, "Output J"))
         output_flag =
             material_db_->getElementBlockParam<bool>(eb_name, "Output J");
-      if (have_pore_pressure_eq_ || output_flag) {
-        p = stateMgr.registerStateVariable(J,
+//      if (have_pore_pressure_eq_ || output_flag) {
+//        p = stateMgr.registerStateVariable(J,
+//            dl_->qp_scalar,
+//            dl_->dummy,
+//            eb_name,
+//            "scalar",
+//            1.0,
+//            true,
+//            output_flag);
+//        ev = Teuchos::rcp(
+//            new PHAL::SaveStateField<EvalT, PHAL::AlbanyTraits>(*p));
+//        fm0.template registerEvaluator<EvalT>(ev);
+//      } else if (true) // MJJ. Incompatible with pore_pressure_eq. Need to fix it.
+//      {
+//          p = stateMgr.registerStateVariable(J,
+//            dl_->qp_scalar,
+//            dl_->dummy,
+//            eb_name,
+//            "scalar",
+//            1.0,
+//            true,
+//            false);
+//        ev = Teuchos::rcp(
+//            new PHAL::SaveStateField<EvalT, PHAL::AlbanyTraits>(*p));
+//        fm0.template registerEvaluator<EvalT>(ev);
+//      }
+      p = stateMgr.registerStateVariable(J,
             dl_->qp_scalar,
             dl_->dummy,
             eb_name,
             "scalar",
             1.0,
             true,
-            output_flag);
+            false);
         ev = Teuchos::rcp(
             new PHAL::SaveStateField<EvalT, PHAL::AlbanyTraits>(*p));
         fm0.template registerEvaluator<EvalT>(ev);
-      }
 
       // Optional output: strain
       if (small_strain) {
@@ -2318,7 +2351,7 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
     p->set<Teuchos::RCP<PHX::DataLayout>>(
         "Coordinate Data Layout",
         dl_->vertices_vector);
-    p->set<Teuchos::RCP<Intrepid2::Cubature<RealType,Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device> >>>("Cubature", cubature);
+    p->set<Teuchos::RCP<Intrepid2::Cubature<PHX::Device>>>("Cubature", cubature);
     p->set<Teuchos::RCP<shards::CellTopology>>("Cell Type", cellType);
 
     // DT for  time integration
@@ -2409,7 +2442,7 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
 
     //Input
     p->set<RealType>("thickness", thickness);
-    p->set<Teuchos::RCP<Intrepid2::Cubature<RealType, Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device> >>>(
+    p->set<Teuchos::RCP<Intrepid2::Cubature<PHX::Device> > >(
         "Cubature",
         surfaceCubature);
     p->set<Intrepid2Basis>("Intrepid2 Basis", surfaceBasis);
@@ -2923,7 +2956,7 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
 
     //Input
     p->set<RealType>("thickness", thickness);
-    p->set<Teuchos::RCP<Intrepid2::Cubature<RealType, Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device> >>>(
+    p->set<Teuchos::RCP<Intrepid2::Cubature<PHX::Device> > >(
         "Cubature",
         surfaceCubature);
     p->set<Intrepid2Basis>("Intrepid2 Basis", surfaceBasis);
@@ -3026,7 +3059,7 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
 
     //Input
     p->set<RealType>("thickness", thickness);
-    p->set<Teuchos::RCP<Intrepid2::Cubature<RealType,Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device> >>>(
+    p->set<Teuchos::RCP<Intrepid2::Cubature<PHX::Device>>>(
         "Cubature",
         surfaceCubature);
     p->set<Intrepid2Basis>("Intrepid2 Basis", surfaceBasis);

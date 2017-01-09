@@ -1,0 +1,8 @@
+/Users/tjcorona/Development/Software/Albany/install/lib/libz.1.2.8.dylib
+/Users/tjcorona/Development/Software/Albany/install/lib/libz.1.dylib
+/Users/tjcorona/Development/Software/Albany/install/lib/libz.dylib
+/Users/tjcorona/Development/Software/Albany/install/lib/libz.a
+/Users/tjcorona/Development/Software/Albany/install/include/zconf.h
+/Users/tjcorona/Development/Software/Albany/install/include/zlib.h
+/Users/tjcorona/Development/Software/Albany/install/share/man3/zlib.3
+/Users/tjcorona/Development/Software/Albany/install/share/zlib.pc

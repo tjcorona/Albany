@@ -6,7 +6,6 @@
 #include "Albany_ProblemUtils.hpp"
 #include "Albany_Utils.hpp"
 #include "Albany_BCUtils.hpp"
-#include "LCM_Utils.h"
 #include "RotationMechanicsProblem.hpp"
 #include "PHAL_AlbanyTraits.hpp"
 #include "NOXSolverPrePostOperator.h"
@@ -453,10 +452,10 @@ void
 Albany::RotationMechanicsProblem::
 getAllocatedStates(
     Teuchos::ArrayRCP<
-        Teuchos::ArrayRCP<Teuchos::RCP<Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device>>>>
+        Teuchos::ArrayRCP<Teuchos::RCP<Kokkos::DynRankView<RealType, PHX::Device>>>>
     old_state,
     Teuchos::ArrayRCP<
-        Teuchos::ArrayRCP<Teuchos::RCP<Intrepid2::FieldContainer_Kokkos<RealType, PHX::Layout, PHX::Device>>>>
+        Teuchos::ArrayRCP<Teuchos::RCP<Kokkos::DynRankView<RealType, PHX::Device>>>>
     new_state
     ) const
     {

@@ -1,0 +1,59 @@
+	    SUMMARY OF THE HDF5 CONFIGURATION
+	    =================================
+
+General Information:
+-------------------
+		   HDF5 Version: 1.8.16
+		  Configured on: Mon Nov 14 09:50:01 EST 2016
+		  Configured by: tjcorona@thomass-mbp.kitware.com
+		 Configure mode: production
+		    Host system: i386-apple-darwin15.6.0
+	      Uname information: Darwin thomass-mbp.kitware.com 15.6.0 Darwin Kernel Version 15.6.0: Mon Aug 29 20:21:34 PDT 2016; root:xnu-3248.60.11~1/RELEASE_X86_64 x86_64
+		       Byte sex: little-endian
+		      Libraries: static, shared
+	     Installation point: /Users/tjcorona/Developent/Software/Albany/install
+
+Compiling Options:
+------------------
+               Compilation Mode: production
+                     C Compiler: /Users/tjcorona/Development/Software/Albany/install/bin/mpicc
+                         CFLAGS: -fPIC -O3
+                      H5_CFLAGS:  
+                      AM_CFLAGS: 
+                       CPPFLAGS: 
+                    H5_CPPFLAGS:   -DNDEBUG -UH5_DEBUG_API
+                    AM_CPPFLAGS:  -I/Users/tjcorona/Developent/Software/Albany/install/include
+               Shared C Library: yes
+               Static C Library: yes
+  Statically Linked Executables: no
+                        LDFLAGS: 
+                     H5_LDFLAGS: 
+                     AM_LDFLAGS:  -L/Users/tjcorona/Developent/Software/Albany/install/lib
+ 	 	Extra libraries: -lz -ldl -lm 
+ 		       Archiver: ar
+ 		 	 Ranlib: ranlib
+ 	      Debugged Packages: 
+		    API Tracing: no
+
+Languages:
+----------
+                        Fortran: no
+
+                            C++: no
+
+Features:
+---------
+                  Parallel HDF5: yes
+             High Level library: yes
+                   Threadsafety: no
+            Default API Mapping: v18
+ With Deprecated Public Symbols: yes
+         I/O filters (external): deflate(zlib)
+                            MPE: 
+                     Direct VFD: no
+                        dmalloc: no
+Clear file buffers before write: yes
+           Using memory checker: no
+         Function Stack Tracing: no
+      Strict File Format Checks: no
+   Optimization Instrumentation: no
